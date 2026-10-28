@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitch Chat Highlight Generator - Halloween Edition</title>
+  
+  <!-- Favicon: Orange Heart -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧡</text></svg>">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;500;600;700;800;900&family=Rubik:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- html2canvas Library for PNG Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0b0712;
+      --card-bg: #140d1e;
+      --border-color: #2e1a47;
+      --accent: #ff6b00;
+      --accent-hover: #e05d00;
+      --halloween-purple: #9d4edd;
+      --text-main: #f3e8ff;
+      --text-muted: #a392b9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      height: 60px;
+      padding: 0 24px;
+      background: #06030a;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand i {
+      color: var(--accent);
+      font-size: 20px;
+    }
+
+    .brand h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'Creepster', cursive;
+      letter-spacing: 1px;
+    }
+
+    .btn-download {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      box-shadow: 0 0 10px rgba(255, 107, 0, 0.3);
+    }
+
+    .btn-download:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 0 15px rgba(255, 107, 0, 0.6);
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      height: calc(100vh - 60px);
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+    }
+
+    /* Left Preview Stage */
+    .preview-stage {
+      background: #07040d;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-right: 1px solid var(--border-color);
+    }
+
+    /* Checkered Canvas Container - Spooky Grid */
+    .canvas-container {
+      width: 100%;
+      max-width: 850px;
+      aspect-ratio: 16 / 9;
+      background-color: #0d0818;
+      background-image: 
+        linear-gradient(45deg, #150d26 25%, transparent 25%), 
+        linear-gradient(-45deg, #150d26 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #150d26 75%), 
+        linear-gradient(-45deg, transparent 75%, #150d26 75%);
+      background-size: 24px 24px;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+
+    /* Spotlight Card */
+    .spotlight-card {
+      background-color: rgba(20, 13, 30, 0.9);
+      border-radius: 12px;
+      width: 80%;
+      padding: 20px 24px;
+      border: 1px solid rgba(255, 107, 0, 0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      transition: all 0.1s ease;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badges-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-icon {
+      height: 20px;
+      width: auto;
+      object-fit: contain;
+      display: inline-block;
+      vertical-align: middle;
+      border-radius: 2px;
+    }
+
+    .username {
+      font-family: 'Rubik', sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .message-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    /* 7TV Paint Image Clipping Effect */
+    .apply-7tv-paint {
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+      background-size: cover !important;
+      background-position: center !important;
+      background-repeat: repeat !important;
+      display: inline-block;
+    }
+
+    /* Controls Panel */
+    .controls-panel {
+      background: var(--card-bg);
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .panel-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    input[type="text"], textarea, select {
+      background: #0b0712;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    input[type="text"]:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .input-btn-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-secondary {
+      background: var(--border-color);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #422666;
+    }
+
+    .badge-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    .badge-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0b0712;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+
+    .badge-item-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .badge-item-info img {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+    }
+
+    .badge-item-info span {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 180px;
+    }
+
+    .btn-remove-badge {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 4px;
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 8px;
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      width: 40px;
+      height: 35px;
+      background: none;
+      cursor: pointer;
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 2px;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+      border-radius: 4px;
+      border: none;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .slider-row span {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--text-muted);
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+
+    /* Halloween Toggle Switch Styles */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0b0712;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 22px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #242831;
+      transition: .3s;
+      border-radius: 22px;
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider-toggle {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider-toggle:before {
+      transform: translateX(22px);
+    }
+
+    /* Floating Ghost Buddy Element */
+    #ghostBuddy {
+      position: fixed;
+      top: 0;
+      left: 0;
+      font-size: 28px;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.15s ease-out, opacity 0.3s ease;
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+      opacity: 0;
+      display: none;
+    }
+
+    /* Footer Credits & Modal */
+    .footer-credits {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .made-by {
+      color: #e2e8f0;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .heart-icon {
+      color: var(--accent);
+    }
+
+    .ai-note-btn {
+      background: none;
+      border: none;
+      color: #7f6998;
+      font-size: 11px;
+      text-align: left;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      width: fit-content;
+    }
+
+    .ai-note-btn:hover {
+      color: var(--text-muted);
+    }
+
+    .ai-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .ai-popup-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .ai-popup {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    }
+
+    .ai-popup h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .ai-popup p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .ai-popup button {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .ai-popup button:hover {
+      background: var(--accent-hover);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Ghost Buddy -->
+  <div id="ghostBuddy">👻</div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <i class="fa-solid fa-ghost"></i>
+      <h1>Spooky Chat Highlights 🎃</h1>
+    </div>
+    <button onclick="downloadPNG()" id="btnDownload" class="btn-download">
+      <i class="fa-solid fa-download"></i>
+      <span>Download PNG</span>
+    </button>
+  </header>
+
+  <!-- Main Body -->
+  <main>
+    <!-- Left Stage / Canvas -->
+    <section class="preview-stage">
+      <div class="canvas-container">
+        <!-- Card to capture -->
+        <div id="spotlightCard" class="spotlight-card">
+          <div class="card-header">
+            <!-- Custom Badges Container -->
+            <div id="previewBadges" class="badges-container"></div>
+            <!-- Username -->
+            <span id="previewUsername" class="username" style="color: #ff6b00;">
+              Niko
+            </span>
+          </div>
+          <!-- Message -->
+          <div id="previewMessage" class="message-text">
+            yo that play was unbelievable!! 🎃👻
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Control Sidebar -->
+    <section class="controls-panel">
+
+      <!-- Halloween Customization Settings -->
+      <div class="panel-section">
+        <span class="section-title">Spooky Effects</span>
+        <div class="switch-row">
+          <label for="toggleGhost">Ghost Cursor Buddy</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggleGhost" checked onchange="toggleGhostBuddy(this.checked)">
+            <span class="slider-toggle"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Text Inputs -->
+      <div class="panel-section">
+        <span class="section-title">Message</span>
+        <div class="form-group">
+          <label for="inputUsername">Username</label>
+          <input type="text" id="inputUsername" value="Niko" oninput="updateCard()">
+        </div>
+        <div class="form-group">
+          <label for="inputMessage">Chat Message</label>
+          <textarea id="inputMessage" rows="3" oninput="updateCard()">yo that play was unbelievable!! 🎃👻</textarea>
+        </div>
+      </div>
+
+      <!-- 7TV Paint Image Link -->
+      <div class="panel-section">
+        <span class="section-title">7TV Paint (Image Link)</span>
+        <div class="form-group">
+          <label for="inputPaintUrl">Paint Image URL</label>
+          <input type="text" id="inputPaintUrl" value="https://cdn.7tv.app/paint/01M41S5QTX4S8D71Y810N3W2XG/layer/01M41S5QTX1HWSWKEA40SSHYQS/4x.webp" placeholder="https://cdn.7tv.app/paint/.../4x.webp" oninput="updateCard()">
+        </div>
+        <div class="form-group">
+          <label for="selectPaintTarget">Apply Paint To</label>
+          <select id="selectPaintTarget" onchange="updateCard()">
+            <option value="username">Username Only</option>
+            <option value="message">Message Only</option>
+            <option value="both">Username & Message</option>
+            <option value="none">Disabled (Solid Color)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Custom Badges Image URLs -->
+      <div class="panel-section">
+        <span class="section-title">Custom Badges (Image Links)</span>
+        <div class="form-group">
+          <label for="inputBadgeUrl">Add Badge Image URL</label>
+          <div class="input-btn-row">
+            <input type="text" id="inputBadgeUrl" placeholder="https://static-cdn.jtvnw.net/badges/.../2" class="flex-1">
+            <button class="btn-secondary" onclick="addCustomBadge()">Add</button>
+          </div>
+        </div>
+        <div id="badgeList" class="badge-list">
+          <!-- Dynamically populated badge links -->
+        </div>
+      </div>
+
+      <!-- Solid Colors Section -->
+      <div class="panel-section">
+        <span class="section-title">Solid Colors (When Paint is Disabled)</span>
+        <div class="form-group">
+          <label>Username Color</label>
+          <div class="color-row">
+            <input type="color" id="inputUserColor" value="#FF6B00" oninput="updateCard()">
+            <input type="text" id="inputUserColorHex" value="#FF6B00" oninput="syncUserColor(this.value)">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Message Color</label>
+          <div class="color-row">
+            <input type="color" id="inputTextColor" value="#F3E8FF" oninput="updateCard()">
+            <input type="text" id="inputTextColorHex" value="#F3E8FF" oninput="syncTextColor(this.value)">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Card Background</label>
+          <div class="color-row">
+            <input type="color" id="inputBgColor" value="#140D1E" oninput="updateCardStyles()">
+            <input type="text" id="inputBgColorHex" value="#140D1E" oninput="syncBgColor(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout & Sizing -->
+      <div class="panel-section">
+        <span class="section-title">Layout & Sizing</span>
+        <div class="form-group">
+          <div class="slider-row">
+            <label>Card Opacity</label>
+            <span id="valOpacity">90%</span>
+          </div>
+          <input type="range" id="sliderOpacity" min="0" max="100" value="90" oninput="updateCardStyles()">
+        </div>
+        <div class="form-group">
+          <div class="slider-row">
+            <label>Username Size</label>
+            <span id="valUserSize">24px</span>
+          </div>
+          <input type="range" id="sliderUserSize" min="14" max="48" value="24" oninput="updateTypography()">
+        </div>
+        <div class="form-group">
+          <div class="slider-row">
+            <label>Message Size</label>
+            <span id="valMsgSize">20px</span>
+          </div>
+          <input type="range" id="sliderMsgSize" min="14" max="48" value="20" oninput="updateTypography()">
+        </div>
+        <div class="form-group">
+          <div class="slider-row">
+            <label>Card Width</label>
+            <span id="valWidth">80%</span>
+          </div>
+          <input type="range" id="sliderWidth" min="40" max="100" value="80" oninput="updateCardStyles()">
+        </div>
+        <div class="form-group">
+          <div class="slider-row">
+            <label>Corner Radius</label>
+            <span id="valRadius">12px</span>
+          </div>
+          <input type="range" id="sliderRadius" min="0" max="32" value="12" oninput="updateCardStyles()">
+        </div>
+      </div>
+
+      <!-- Footer / Credits -->
+      <div class="footer-credits">
+        <div class="made-by">
+          Made By Niko with love <i class="fa-solid fa-heart heart-icon"></i>
+        </div>
+        <button class="ai-note-btn" onclick="openAiPopup()">made with ai help</button>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- AI Help Popup Modal -->
+  <div id="aiPopup" class="ai-popup-overlay" onclick="closeAiPopup(event)">
+    <div class="ai-popup">
+      <h3>About this tool 🎃</h3>
+      <p>This tool was designed and created by Niko, using AI assistance to write clean code, handle image processing, and render 7TV image paints onto text.</p>
+      <button onclick="closeAiPopupDirect()">Got it</button>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // Custom Badge URLs List
+    let customBadges = [
+      'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2' // Default Broadcaster Badge
+    ];
+
+    // Ghost Buddy State Logic
+    let ghostEnabled = true;
+    const ghostEl = document.getElementById('ghostBuddy');
+    let mouseX = 0, mouseY = 0;
+    let ghostX = 0, ghostY = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderBadgeListUI();
+      updateCard();
+      updateCardStyles();
+      updateTypography();
+      initGhostBuddy();
+    });
+
+    // Ghost Buddy Following Animation
+    function initGhostBuddy() {
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      function animateGhost() {
+        if (ghostEnabled) {
+          // Smooth floating / trailing animation toward mouse position
+          ghostX += (mouseX + 15 - ghostX) * 0.1;
+          ghostY += (mouseY + 15 - ghostY) * 0.1;
+
+          // Flip ghost depending on movement direction
+          const flip = mouseX < ghostX ? 'scaleX(-1)' : 'scaleX(1)';
+          ghostEl.style.transform = `translate3d(${ghostX}px, ${ghostY}px, 0) ${flip}`;
+        }
+        requestAnimationFrame(animateGhost);
+      }
+      animateGhost();
+    }
+
+    function toggleGhostBuddy(enabled) {
+      ghostEnabled = enabled;
+      if (enabled) {
+        ghostEl.style.display = 'block';
+        setTimeout(() => ghostEl.style.opacity = '1', 10);
+      } else {
+        ghostEl.style.opacity = '0';
+        setTimeout(() => ghostEl.style.display = 'none', 300);
+      }
+    }
+
+    // Helper: HEX to RGBA
+    function hexToRgba(hex, opacity) {
+      let c = hex.replace('#', '');
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const num = parseInt(c, 16);
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+
+    // Add Custom Badge
+    function addCustomBadge() {
+      const input = document.getElementById('inputBadgeUrl');
+      const url = input.value.trim();
+      if (url) {
+        customBadges.push(url);
+        input.value = '';
+        renderBadgeListUI();
+        updateCard();
+      }
+    }
+
+    // Remove Custom Badge
+    function removeBadge(index) {
+      customBadges.splice(index, 1);
+      renderBadgeListUI();
+      updateCard();
+    }
+
+    // Render Badges Control UI & Card Preview
+    function renderBadgeListUI() {
+      const listContainer = document.getElementById('badgeList');
+      listContainer.innerHTML = '';
+
+      customBadges.forEach((url, index) => {
+        const item = document.createElement('div');
+        item.className = 'badge-item';
+        item.innerHTML = `
+          <div class="badge-item-info">
+            <img src="${url}" alt="Badge" onerror="this.src='https://placehold.co/20x20/242831/fff?text=?'">
+            <span>${url}</span>
+          </div>
+          <button class="btn-remove-badge" onclick="removeBadge(${index})" title="Remove Badge"><i class="fa-solid fa-trash-can"></i></button>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    function renderBadgesOnCard() {
+      const container = document.getElementById('previewBadges');
+      container.innerHTML = '';
+
+      customBadges.forEach(url => {
+        const img = document.createElement('img');
+        img.className = 'badge-icon';
+        img.src = url;
+        img.alt = 'Badge';
+        img.onerror = () => { img.style.display = 'none'; };
+        container.appendChild(img);
+      });
+    }
+
+    // Core Card Update Logic
+    function updateCard() {
+      const username = document.getElementById('inputUsername').value || 'User';
+      const message = document.getElementById('inputMessage').value || '';
+      const userColor = document.getElementById('inputUserColor').value;
+      const textColor = document.getElementById('inputTextColor').value;
+      const paintUrl = document.getElementById('inputPaintUrl').value.trim();
+      const paintTarget = document.getElementById('selectPaintTarget').value;
+
+      const userEl = document.getElementById('previewUsername');
+      const msgEl = document.getElementById('previewMessage');
+
+      userEl.innerText = username;
+      msgEl.innerText = message;
+
+      // Sync Hex Display
+      document.getElementById('inputUserColorHex').value = userColor.toUpperCase();
+      document.getElementById('inputTextColorHex').value = textColor.toUpperCase();
+
+      // Reset Styles
+      userEl.classList.remove('apply-7tv-paint');
+      msgEl.classList.remove('apply-7tv-paint');
+      userEl.style.backgroundImage = 'none';
+      msgEl.style.backgroundImage = 'none';
+      userEl.style.color = userColor;
+      msgEl.style.color = textColor;
+
+      // Apply 7TV Image Paint via CSS Background Clip
+      if (paintUrl && paintTarget !== 'none') {
+        const bgStyle = `url('${paintUrl}')`;
+
+        if (paintTarget === 'username' || paintTarget === 'both') {
+          userEl.classList.add('apply-7tv-paint');
+          userEl.style.backgroundImage = bgStyle;
+        }
+
+        if (paintTarget === 'message' || paintTarget === 'both') {
+          msgEl.classList.add('apply-7tv-paint');
+          msgEl.style.backgroundImage = bgStyle;
+        }
+      }
+
+      renderBadgesOnCard();
+    }
+
+    // Color Hex Syncing
+    function syncUserColor(hex) {
+      if (/^#[0-9A-F]{6}$/i.test(hex)) {
+        document.getElementById('inputUserColor').value = hex;
+        updateCard();
+      }
+    }
+
+    function syncTextColor(hex) {
+      if (/^#[0-9A-F]{6}$/i.test(hex)) {
+        document.getElementById('inputTextColor').value = hex;
+        updateCard();
+      }
+    }
+
+    function syncBgColor(hex) {
+      if (/^#[0-9A-F]{6}$/i.test(hex)) {
+        document.getElementById('inputBgColor').value = hex;
+        updateCardStyles();
+      }
+    }
+
+    // Typography Sizing
+    function updateTypography() {
+      const userSize = document.getElementById('sliderUserSize').value;
+      const msgSize = document.getElementById('sliderMsgSize').value;
+
+      document.getElementById('valUserSize').innerText = userSize + 'px';
+      document.getElementById('valMsgSize').innerText = msgSize + 'px';
+
+      document.getElementById('previewUsername').style.fontSize = userSize + 'px';
+      document.getElementById('previewMessage').style.fontSize = msgSize + 'px';
+    }
+
+    // Card Styling (Background, Opacity, Radius, Width)
+    function updateCardStyles() {
+      const bgColor = document.getElementById('inputBgColor').value;
+      const opacity = document.getElementById('sliderOpacity').value / 100;
+      const radius = document.getElementById('sliderRadius').value;
+      const width = document.getElementById('sliderWidth').value;
+
+      document.getElementById('inputBgColorHex').value = bgColor.toUpperCase();
+      document.getElementById('valOpacity').innerText = Math.round(opacity * 100) + '%';
+      document.getElementById('valRadius').innerText = radius + 'px';
+      document.getElementById('valWidth').innerText = width + '%';
+
+      const rgbaBg = hexToRgba(bgColor, opacity);
+      const card = document.getElementById('spotlightCard');
+
+      card.style.backgroundColor = rgbaBg;
+      card.style.borderRadius = radius + 'px';
+      card.style.width = width + '%';
+    }
+
+    // Modal Popup for "made with ai help"
+    function openAiPopup() {
+      document.getElementById('aiPopup').classList.add('open');
+    }
+
+    function closeAiPopup(e) {
+      if (e.target.id === 'aiPopup') {
+        document.getElementById('aiPopup').classList.remove('open');
+      }
+    }
+
+    function closeAiPopupDirect() {
+      document.getElementById('aiPopup').classList.remove('open');
+    }
+
+    // Export Transparent PNG using html2canvas
+    function downloadPNG() {
+      const cardElement = document.getElementById('spotlightCard');
+      const btn = document.getElementById('btnDownload');
+      const originalText = btn.innerHTML;
+
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Exporting...</span>`;
+      btn.style.opacity = '0.7';
+
+      html2canvas(cardElement, {
+        backgroundColor: null, // Transparent background
+        scale: 3, // High DPI rendering
+        useCORS: true,
+        logging: false
+      }).then(canvas => {
+        const username = document.getElementById('inputUsername').value.trim() || 'highlight';
+        const link = document.createElement('a');
+        link.download = `chat-${username.toLowerCase().replace(/\s+/g, '-')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Downloaded!</span>`;
+        btn.style.opacity = '1';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+        }, 2000);
+      }).catch(err => {
+        console.error('PNG export error:', err);
+        btn.innerHTML = originalText;
+        btn.style.opacity = '1';
+      });
+    }
+  </script>
+</body>
+</html>
