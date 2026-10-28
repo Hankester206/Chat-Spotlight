@@ -76,20 +76,44 @@
       letter-spacing: 1px;
     }
 
-    .btn-download {
-      background: var(--accent);
-      color: #000;
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-download,
+    .btn-header-secondary {
       border: none;
-      padding: 8px 16px;
+      padding: 8px 14px;
       border-radius: 6px;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
+      white-space: nowrap;
       transition: all 0.15s ease;
+    }
+
+    .btn-download {
+      background: var(--accent);
+      color: #000;
       box-shadow: 0 0 10px rgba(255, 107, 0, 0.3);
+    }
+
+    .btn-header-secondary {
+      background: #21152f;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-header-secondary:hover,
+    .btn-header-secondary[aria-pressed="true"] {
+      background: #38204d;
+      border-color: var(--halloween-purple);
     }
 
     .btn-download:hover {
@@ -200,10 +224,13 @@
       -webkit-background-clip: text !important;
       -webkit-text-fill-color: transparent !important;
       background-clip: text !important;
-      background-size: cover !important;
+      background-size: 100% 100% !important;
       background-position: center !important;
-      background-repeat: repeat !important;
+      background-repeat: no-repeat !important;
       display: inline-block;
+      /* Keep the image clipped to glyphs in Chromium-based browsers. */
+      color: transparent !important;
+      -webkit-text-fill-color: transparent !important;
     }
 
     /* Controls Panel */
@@ -551,10 +578,20 @@
       <i class="fa-solid fa-ghost"></i>
       <h1>Spooky Chat Highlights 🎃</h1>
     </div>
-    <button onclick="downloadPNG()" id="btnDownload" class="btn-download">
-      <i class="fa-solid fa-download"></i>
-      <span>Download PNG</span>
-    </button>
+    <div class="header-actions">
+      <button onclick="copyPNG()" id="btnCopy" class="btn-header-secondary" title="Copy highlight image to clipboard">
+        <i class="fa-regular fa-copy"></i>
+        <span>Copy</span>
+      </button>
+      <button onclick="toggleGhostBuddy(!ghostEnabled)" id="btnGhost" class="btn-header-secondary" aria-pressed="false" title="Toggle ghost cursor buddy">
+        <i class="fa-solid fa-ghost"></i>
+        <span>Ghost</span>
+      </button>
+      <button onclick="downloadPNG()" id="btnDownload" class="btn-download">
+        <i class="fa-solid fa-download"></i>
+        <span>Download PNG</span>
+      </button>
+    </div>
   </header>
 
   <!-- Main Body -->
@@ -582,18 +619,6 @@
 
     <!-- Right Control Sidebar -->
     <section class="controls-panel">
-
-      <!-- Halloween Customization Settings -->
-      <div class="panel-section">
-        <span class="section-title">Spooky Effects</span>
-        <div class="switch-row">
-          <label for="toggleGhost">Ghost Cursor Buddy</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="toggleGhost" checked onchange="toggleGhostBuddy(this.checked)">
-            <span class="slider-toggle"></span>
-          </label>
-        </div>
-      </div>
 
       <!-- Text Inputs -->
       <div class="panel-section">
@@ -735,7 +760,7 @@
     ];
 
     // Ghost Buddy State Logic
-    let ghostEnabled = true;
+    let ghostEnabled = false;
     const ghostEl = document.getElementById('ghostBuddy');
     let mouseX = 0, mouseY = 0;
     let ghostX = 0, ghostY = 0;
@@ -746,6 +771,7 @@
       updateCardStyles();
       updateTypography();
       initGhostBuddy();
+      toggleGhostBuddy(false);
     });
 
     // Ghost Buddy Following Animation
@@ -771,7 +797,12 @@
     }
 
     function toggleGhostBuddy(enabled) {
-      ghostEnabled = enabled;
+      ghostEnabled = Boolean(enabled);
+      const ghostButton = document.getElementById('btnGhost');
+      if (ghostButton) {
+        ghostButton.setAttribute('aria-pressed', String(ghostEnabled));
+        ghostButton.title = ghostEnabled ? 'Turn ghost cursor buddy off' : 'Turn ghost cursor buddy on';
+      }
       if (enabled) {
         ghostEl.style.display = 'block';
         setTimeout(() => ghostEl.style.opacity = '1', 10);
@@ -958,37 +989,133 @@
       document.getElementById('aiPopup').classList.remove('open');
     }
 
-    // Export Transparent PNG using html2canvas
-    function downloadPNG() {
-      const cardElement = document.getElementById('spotlightCard');
-      const btn = document.getElementById('btnDownload');
-      const originalText = btn.innerHTML;
+    // Convert a cross-origin paint image to a data URL for reliable PNG export.
+    async function imageUrlToDataUrl(url) {
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) throw new Error('Could not load the 7TV paint image.');
+      const blob = await response.blob();
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
 
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Exporting...</span>`;
+    function escapeXml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
+      }[char]));
+    }
+
+    // html2canvas does not consistently support background-clip:text. For export,
+    // render painted text as an SVG text mask so the paint can never become a rectangle.
+    function makePaintSvg(element, paintDataUrl) {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      const width = Math.max(1, Math.ceil(rect.width));
+      const height = Math.max(1, Math.ceil(rect.height));
+      const fontSize = parseFloat(style.fontSize) || 20;
+      const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.4;
+      const fontFamily = escapeXml(style.fontFamily || 'sans-serif');
+      const fontWeight = escapeXml(style.fontWeight || '600');
+      const text = element.innerText || element.textContent || '';
+      const isUsername = element.id === 'previewUsername';
+      const lines = [];
+
+      if (isUsername) {
+        lines.push(text);
+      } else {
+        // Approximate browser wrapping, keeping line breaks and avoiding overflow.
+        const measure = document.createElement('canvas').getContext('2d');
+        measure.font = `${fontWeight} ${fontSize}px ${style.fontFamily}`;
+        const maxWidth = Math.max(1, width - 2);
+        for (const paragraph of text.split('\n')) {
+          let line = '';
+          for (const word of paragraph.split(/\s+/)) {
+            const candidate = line ? `${line} ${word}` : word;
+            if (line && measure.measureText(candidate).width > maxWidth) {
+              lines.push(line);
+              line = word;
+            } else line = candidate;
+          }
+          lines.push(line);
+        }
+      }
+
+      const baseline = isUsername ? Math.min(height - 1, fontSize * 0.84) : fontSize;
+      const textNodes = lines.map((line, index) =>
+        `<text x="0" y="${baseline + index * lineHeight}" fill="white" font-family="${fontFamily}" font-size="${fontSize}px" font-weight="${fontWeight}">${escapeXml(line)}</text>`
+      ).join('');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><pattern id="paint" width="${width}" height="${height}" patternUnits="userSpaceOnUse"><image href="${paintDataUrl}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/></pattern><mask id="textMask"><rect width="100%" height="100%" fill="black"/>${textNodes.replace(/fill="white"/g, 'fill="white"')}</mask></defs><rect width="100%" height="100%" fill="url(#paint)" mask="url(#textMask)"/></svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    // Export transparent PNG using html2canvas, with an SVG-mask fallback for 7TV paint.
+    async function downloadPNG(copyToClipboard = false) {
+      const cardElement = document.getElementById('spotlightCard');
+      const btn = document.getElementById(copyToClipboard ? 'btnCopy' : 'btnDownload');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${copyToClipboard ? 'Copying...' : 'Exporting...'}</span>`;
       btn.style.opacity = '0.7';
 
-      html2canvas(cardElement, {
-        backgroundColor: null, // Transparent background
-        scale: 3, // High DPI rendering
-        useCORS: true,
-        logging: false
-      }).then(canvas => {
-        const username = document.getElementById('inputUsername').value.trim() || 'highlight';
-        const link = document.createElement('a');
-        link.download = `chat-${username.toLowerCase().replace(/\s+/g, '-')}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+      try {
+        const paintUrl = document.getElementById('inputPaintUrl').value.trim();
+        const paintTarget = document.getElementById('selectPaintTarget').value;
+        let paintDataUrl = null;
+        if (paintUrl && paintTarget !== 'none' && cardElement.querySelector('.apply-7tv-paint')) {
+          try { paintDataUrl = await imageUrlToDataUrl(paintUrl); }
+          catch (error) { console.warn('Could not prepare 7TV paint for export:', error); }
+        }
 
-        btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Downloaded!</span>`;
-        btn.style.opacity = '1';
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-        }, 2000);
-      }).catch(err => {
-        console.error('PNG export error:', err);
+        const canvas = await html2canvas(cardElement, {
+          backgroundColor: null,
+          scale: 3,
+          useCORS: true,
+          logging: false,
+          onclone: clonedDocument => {
+            if (!paintDataUrl) return;
+            ['previewUsername', 'previewMessage'].forEach(id => {
+              const original = document.getElementById(id);
+              const clone = clonedDocument.getElementById(id);
+              if (!original || !clone || !original.classList.contains('apply-7tv-paint')) return;
+              const svgUrl = makePaintSvg(original, paintDataUrl);
+              const image = clonedDocument.createElement('img');
+              image.src = svgUrl;
+              image.alt = original.innerText || '';
+              image.style.cssText = `display:block;width:${original.getBoundingClientRect().width}px;height:${original.getBoundingClientRect().height}px;object-fit:fill;`;
+              clone.replaceWith(image);
+            });
+          }
+        });
+
+        if (copyToClipboard) {
+          if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+            throw new Error('Image clipboard is not supported in this browser. Try using HTTPS or localhost.');
+          }
+          const blob = await new Promise((resolve, reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('Could not create PNG image.')), 'image/png'));
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Copied!</span>`;
+        } else {
+          const username = document.getElementById('inputUsername').value.trim() || 'highlight';
+          const link = document.createElement('a');
+          link.download = `chat-${username.toLowerCase().replace(/\s+/g, '-')}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Downloaded!</span>`;
+        }
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+      } catch (err) {
+        console.error(copyToClipboard ? 'PNG copy error:' : 'PNG export error:', err);
         btn.innerHTML = originalText;
+        if (copyToClipboard) alert(err.message || 'Could not copy the image. Try downloading it instead.');
+      } finally {
         btn.style.opacity = '1';
-      });
+      }
+    }
+
+    function copyPNG() {
+      return downloadPNG(true);
     }
   </script>
 </body>
