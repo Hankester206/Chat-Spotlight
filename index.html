@@ -6,8 +6,7 @@
   <title>Twitch Chat Highlight Generator - Halloween Edition</title>
   
   <!-- Favicon: Orange Heart -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧡</text></svg>">
-
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌊</text></svg>">
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
@@ -565,9 +564,139 @@
     .ai-popup button:hover {
       background: var(--accent-hover);
     }
+  
+
+    /* Theme layer: only app chrome and UI controls are themed.
+       The spotlight card and its text/paint/export styles are intentionally untouched. */
+    body[data-theme="normal"] {
+      --bg-dark: #101318;
+      --card-bg: #191e26;
+      --border-color: #303946;
+      --accent: #78aef8;
+      --accent-hover: #5596eb;
+      --halloween-purple: #8b9bb4;
+      --text-main: #edf2f8;
+      --text-muted: #9ba8b8;
+    }
+    body[data-theme="normal"] header { background: #151a21; }
+    body[data-theme="normal"] .preview-stage { background: #11161d; }
+    body[data-theme="normal"] .section-title { color: var(--accent); }
+    body[data-theme="normal"] .btn-download {
+      color: #07111f;
+      box-shadow: 0 3px 12px rgba(112,167,255,.22);
+    }
+    body[data-theme="normal"] .btn-header-secondary,
+    body[data-theme="normal"] .btn-secondary {
+      background: #252e3a;
+      border: 1px solid #3a4655;
+      color: #edf2f8;
+    }
+    body[data-theme="normal"] .btn-header-secondary:hover,
+    body[data-theme="normal"] .btn-secondary:hover,
+    body[data-theme="normal"] .btn-header-secondary[aria-pressed="true"] {
+      background: #34465d;
+      border-color: #78aef8;
+    }
+    body[data-theme="normal"] input[type="text"],
+    body[data-theme="normal"] textarea,
+    body[data-theme="normal"] select,
+    body[data-theme="normal"] .badge-item,
+    body[data-theme="normal"] .switch-row {
+      background: #111720;
+      border-color: #303946;
+    }
+
+    /* Frutiger Aero: glossy treatment is limited to buttons and small UI chrome. */
+    body[data-theme="aero"] {
+      --bg-dark: #071c2a;
+      --card-bg: #102b3a;
+      --border-color: rgba(171, 231, 244, .32);
+      --accent: #a8f0d0;
+      --accent-hover: #c8ffe8;
+      --halloween-purple: #70d9d2;
+      --text-main: #efffff;
+      --text-muted: #b6d8df;
+    }
+    body[data-theme="aero"] header,
+    body[data-theme="aero"] .controls-panel {
+      background: linear-gradient(145deg, #153d50, #092538);
+      border-color: rgba(177, 239, 247, .36);
+    }
+    body[data-theme="aero"] .preview-stage {
+      background: linear-gradient(145deg, #071b2a, #0b2a3b);
+      border-color: rgba(164, 228, 238, .22);
+    }
+    body[data-theme="aero"] .section-title { color: #a8f0d0; }
+    body[data-theme="aero"] .btn-download,
+    body[data-theme="aero"] .btn-header-secondary,
+    body[data-theme="aero"] .btn-secondary,
+    body[data-theme="aero"] .ai-popup button {
+      border: 1px solid rgba(220, 255, 255, .72);
+      border-radius: 999px;
+      color: #062333;
+      font-family: "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", system-ui, sans-serif;
+      font-weight: 700;
+      text-shadow: 0 1px 1px rgba(255,255,255,.45);
+      background:
+        radial-gradient(ellipse at 50% 115%, rgba(255,255,255,.9), transparent 58%),
+        linear-gradient(to bottom, rgba(218,255,255,.96) 0%, rgba(99,205,207,.94) 48%, rgba(43,139,166,.98) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9),
+                  inset 0 -2px 3px rgba(0,44,66,.3),
+                  0 3px 7px rgba(0,0,0,.38),
+                  0 0 14px rgba(83,219,221,.12);
+      transition: filter .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+    body[data-theme="aero"] .btn-download:hover,
+    body[data-theme="aero"] .btn-header-secondary:hover,
+    body[data-theme="aero"] .btn-secondary:hover,
+    body[data-theme="aero"] .ai-popup button:hover {
+      filter: brightness(1.12) saturate(1.1);
+      transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.95),
+                  0 5px 10px rgba(0,0,0,.42),
+                  0 0 18px rgba(83,219,221,.28);
+    }
+    body[data-theme="aero"] .btn-download:active,
+    body[data-theme="aero"] .btn-header-secondary:active,
+    body[data-theme="aero"] .btn-secondary:active {
+      transform: translateY(1px);
+      filter: brightness(.96);
+    }
+    body[data-theme="aero"] input[type="text"],
+    body[data-theme="aero"] textarea,
+    body[data-theme="aero"] select,
+    body[data-theme="aero"] .badge-item,
+    body[data-theme="aero"] .switch-row {
+      color: #efffff;
+      background: #092637;
+      border-color: rgba(159, 226, 236, .38);
+    }
+    body[data-theme="aero"] input[type="text"]:focus,
+    body[data-theme="aero"] textarea:focus,
+    body[data-theme="aero"] select:focus {
+      border-color: #a8f0d0;
+      box-shadow: 0 0 0 2px rgba(168,240,208,.16);
+    }
+    body[data-theme="aero"] .ai-popup {
+      background: linear-gradient(145deg, #185367, #071e30);
+      border-color: rgba(190,244,248,.48);
+    }
+    body[data-theme="aero"] .footer-credits { border-color: rgba(171,231,244,.28); }
+    body[data-theme="aero"] .made-by { color: #e5fbff; }
+
+    .theme-switch {
+      min-width: 82px;
+      padding: 7px 10px;
+    }
+    .theme-switch span { font-size: 12px; }
+    @media (max-width: 560px) {
+      .theme-switch { min-width: 0; padding: 8px 10px; }
+      .theme-switch span { display: none; }
+    }
+
   </style>
 </head>
-<body>
+<body data-theme="normal">
 
   <!-- Floating Ghost Buddy -->
   <div id="ghostBuddy">👻</div>
@@ -579,6 +708,11 @@
       <h1>Spooky Chat Highlights 🎃</h1>
     </div>
     <div class="header-actions">
+      <button onclick="cycleTheme()" id="btnTheme" class="btn-header-secondary theme-switch"
+              title="Current theme: Normal. Click to switch theme"
+              aria-label="Current theme: Normal. Click to switch theme">
+        <i class="fa-solid fa-palette"></i><span>Normal</span>
+      </button>
       <button onclick="copyPNG()" id="btnCopy" class="btn-header-secondary" title="Copy highlight image to clipboard">
         <i class="fa-regular fa-copy"></i>
         <span>Copy</span>
@@ -754,6 +888,40 @@
 
   <!-- JavaScript Logic -->
   <script>
+
+    // UI theme switch. The chat highlight preview and PNG export are never themed.
+    const availableThemes = ['normal', 'aero', 'halloween'];
+    const themeIcons = {
+      normal: 'fa-moon',
+      aero: 'fa-water',
+      halloween: 'fa-ghost'
+    };
+
+    function setTheme(theme) {
+      if (!availableThemes.includes(theme)) theme = 'normal';
+      document.body.dataset.theme = theme;
+
+      const button = document.getElementById('btnTheme');
+      if (button) {
+        const label = theme.charAt(0).toUpperCase() + theme.slice(1);
+        button.innerHTML = `<i class="fa-solid ${themeIcons[theme]}"></i><span>${label}</span>`;
+        button.title = `Current theme: ${label}. Click to switch theme`;
+        button.setAttribute('aria-label', `Current theme: ${label}. Click to switch theme`);
+      }
+
+      try {
+        localStorage.setItem('chatHighlightTheme', theme);
+      } catch (_) {
+        // The theme still works for this page if storage is unavailable.
+      }
+    }
+
+    function cycleTheme() {
+      const current = document.body.dataset.theme || 'normal';
+      const currentIndex = availableThemes.indexOf(current);
+      setTheme(availableThemes[(currentIndex + 1) % availableThemes.length]);
+    }
+
     // Custom Badge URLs List
     let customBadges = [
       'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2' // Default Broadcaster Badge
@@ -766,6 +934,9 @@
     let ghostX = 0, ghostY = 0;
 
     window.addEventListener('DOMContentLoaded', () => {
+      let savedTheme = 'normal';
+      try { savedTheme = localStorage.getItem('chatHighlightTheme') || 'normal'; } catch (_) {}
+      setTheme(savedTheme);
       renderBadgeListUI();
       updateCard();
       updateCardStyles();
